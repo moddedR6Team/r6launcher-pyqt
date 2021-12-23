@@ -127,3 +127,14 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Project specific Gitignore stuff
+/.idea
+/7zip
+/main.build
+/r6launcher.build
+/r6launcher.dist
+R6Launcher.7z
+main.cmd
+settings.json
+profiles.json

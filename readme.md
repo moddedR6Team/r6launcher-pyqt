@@ -26,7 +26,7 @@ R6Launcher is a launcher written in Python made to launch old Siege versions
 - Build will be in the `r6launcher.dist` folder (`R6Launcher.7z` will appear if you correctly setted up the 7Zip variable)
 
 ## Upcoming features
-- Settings
 - Edit profile
+- Settings
 - Downloader directly in the launcher
 - Mods/tools marketplace

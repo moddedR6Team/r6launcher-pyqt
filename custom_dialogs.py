@@ -1,5 +1,6 @@
 from PyQt5 import QtWidgets as qtWidgets, QtCore as qtCore
-
+import os
+import useful_funcs
 from r6launcher import Profile
 
 
@@ -61,8 +62,8 @@ class NewProfileDialog(qtWidgets.QDialog):
         self.select_file_button = qtWidgets.QPushButton("Select file...")
         self.select_file_button.clicked.connect(self.open_file)
 
-        self.layout.addRow("Profile Name", self.profile_name_line_edit)
         self.layout.addRow("Startup File", self.select_file_button)
+        self.layout.addRow("Profile Name", self.profile_name_line_edit)
 
         self.parent_layout.addLayout(self.layout)
         self.parent_layout.addWidget(self.buttonBox)
@@ -86,6 +87,11 @@ class NewProfileDialog(qtWidgets.QDialog):
         files, _ = qtWidgets.QFileDialog.getOpenFileNames(self, "Select version boot file", "",
                                                           "Siege startup file (*.exe *.bat)", options=options)
         if files:
-            print(files)
+            path = os.path.normpath(files[0])
+            try:
+                new_profile_name = useful_funcs.folder_to_string(path.split(os.sep)[-2][5:])
+                self.profile_name_line_edit.setText(new_profile_name)
+            except Exception:
+                pass
             self.select_file_button.setText(files[0])
             self.exe_path = files[0]

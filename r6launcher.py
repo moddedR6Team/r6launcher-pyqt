@@ -11,6 +11,7 @@ import settings_manager
 import misc_util
 import custom_dialogs
 import custom_log
+import useful_funcs
 
 
 class Profile:
@@ -26,8 +27,10 @@ class MainWindow(qtWidgets.QWidget):
     def __init__(self, parent=None):
         super(MainWindow, self).__init__(parent)
 
+        self.launcher_version = "0.0.2"
+
         self.logger = custom_log.Logger(".\\logs\\", False)
-        self.logger.log(self.logger.INFO, "R6 Launcher started")
+        self.logger.log(self.logger.INFO, f"R6 Launcher v{self.launcher_version} started")
 
         self.logger.log(self.logger.INFO, f"Qt version: {qtCore.QT_VERSION_STR}")
 
@@ -38,13 +41,8 @@ class MainWindow(qtWidgets.QWidget):
         self.check_if_siege_running_timer.setInterval(500)
         self.check_if_siege_running_timer.start()
 
-        self.auto_refresh_timer = qtCore.QTimer()
-        self.auto_refresh_timer.timeout.connect(self.button_update_pages)
-        self.auto_refresh_timer.setInterval(10000)
-        self.auto_refresh_timer.start()
-
         self.resize(650, 400)
-        self.setWindowTitle("R6 Launcher Alpha")
+        self.setWindowTitle(f"R6 Launcher {self.launcher_version}")
 
         # If profiles json file doesnt exist, makes a new blank one
         if not os.path.isfile("profiles.json"):
@@ -54,8 +52,6 @@ class MainWindow(qtWidgets.QWidget):
 
         self.read_json_profiles()
 
-        self.game_running = False
-
         self.update_app()
 
         self.showNormal()
@@ -64,7 +60,9 @@ class MainWindow(qtWidgets.QWidget):
         new_status = misc_util.is_siege_running()
         if not new_status == self.is_siege_running:
             self.is_siege_running = misc_util.is_siege_running()
+            old_index = self.launcher_page_combo.currentIndex()
             self.button_update_pages()
+            self.launcher_page_combo.setCurrentIndex(old_index)
 
     def __del__(self):
         self.logger.log(self.logger.INFO, "Closing R6 Launcher")
@@ -94,62 +92,159 @@ class MainWindow(qtWidgets.QWidget):
                 self.logger.log(self.logger.INFO, f"Loaded {new_profile.to_string()}")
 
     def update_app(self):
-        layout = qtWidgets.QVBoxLayout()
-        self.setLayout(layout)
 
-        self.page_combo = qtWidgets.QComboBox()
+        parent_layout = qtWidgets.QHBoxLayout()
+
+        self.left_column_layout = qtWidgets.QVBoxLayout()
+        self.left_column_layout.setAlignment(qtCore.Qt.AlignTop)
+
+        self.go_launcher_button = qtWidgets.QPushButton("Launcher")
+        self.go_launcher_button.setIcon(qtGui.QIcon(os.path.join("assets", "play_arrow_icon_w.png")))
+        self.go_launcher_button.clicked.connect(self.parent_switch_page_launcher)
+        self.go_launcher_button.setStyleSheet("QPushButton {text-align:left;}");
+
+        self.go_downloader_button = qtWidgets.QPushButton("Downloader")
+        self.go_downloader_button.setIcon(qtGui.QIcon(os.path.join("assets", "download_icon_w.png")))
+        self.go_downloader_button.clicked.connect(self.parent_switch_page_downloader)
+        self.go_launcher_button.setStyleSheet("QPushButton {text-align:left;}");
+
+        self.go_marketplace_button = qtWidgets.QPushButton("Marketplace")
+        self.go_marketplace_button.setIcon(qtGui.QIcon(os.path.join("assets", "shop_icon_w.png")))
+        self.go_marketplace_button.clicked.connect(self.parent_switch_page_marketplace)
+        self.go_marketplace_button.setStyleSheet("QPushButton {text-align:left;}");
+
+        self.go_settings_button = qtWidgets.QPushButton("Settings")
+        self.go_settings_button.setIcon(qtGui.QIcon(os.path.join("assets", "settings_icon_w.png")))
+        self.go_settings_button.clicked.connect(self.parent_switch_page_settings)
+        self.go_settings_button.setStyleSheet("QPushButton {text-align:left;}");
+
+        self.go_about_button = qtWidgets.QPushButton("About")
+        self.go_about_button.setIcon(qtGui.QIcon(os.path.join("assets", "info_icon_w.png")))
+        self.go_about_button.clicked.connect(self.parent_switch_page_about)
+        self.go_about_button.setStyleSheet("QPushButton {text-align:left;}");
+
+        self.left_column_layout.addWidget(self.go_launcher_button)
+        self.left_column_layout.addWidget(self.go_downloader_button)
+        self.left_column_layout.addWidget(self.go_marketplace_button)
+        self.left_column_layout.addWidget(self.go_settings_button)
+        self.left_column_layout.addWidget(self.go_about_button)
+
+        self.parent_stacked_layout = qtWidgets.QStackedLayout()
+        parent_layout.addLayout(self.left_column_layout)
+        parent_layout.addLayout(self.parent_stacked_layout)
+        self.setLayout(parent_layout)
+
+        launcher_layout_page = qtWidgets.QVBoxLayout()
+
+        launcher_page = qtWidgets.QWidget()
+        downloader_page = qtWidgets.QWidget()
+        marketplace_page = qtWidgets.QWidget()
+        settings_page = qtWidgets.QWidget()
+        about_page = qtWidgets.QWidget()
+
+        ## LAUCHER SECTION
+        self.launcher_page_combo = qtWidgets.QComboBox()
         self.update_check_box()
-        self.page_combo.activated.connect(self.switch_page)
-
+        self.launcher_page_combo.activated.connect(self.launcher_switch_page)
         self.addprofile_button = qtWidgets.QPushButton()
         self.addprofile_button.setIcon(qtGui.QIcon(os.path.join("assets", "add_icon_w")))
         self.addprofile_button.clicked.connect(self.button_new_profile)
-
         self.editprofile_button = qtWidgets.QPushButton()
         self.editprofile_button.setIcon(qtGui.QIcon(os.path.join("assets", "edit_icon_w")))
         self.editprofile_button.clicked.connect(self.button_wip_function)
-
         self.deleteprofile_button = qtWidgets.QPushButton()
         self.deleteprofile_button.setIcon(qtGui.QIcon(os.path.join("assets", "delete_icon_w")))
         self.deleteprofile_button.clicked.connect(self.button_delete_profile)
-
         self.settings_button = qtWidgets.QPushButton()
         self.settings_button.setIcon(qtGui.QIcon(os.path.join("assets", "settings_icon_w")))
         self.settings_button.clicked.connect(self.button_open_settings)
-
         self.refresh_button = qtWidgets.QPushButton()
         self.refresh_button.setIcon(qtGui.QIcon(os.path.join("assets", "refresh_icon_w")))
         self.refresh_button.clicked.connect(self.button_update_pages)
-
-        self.stackedLayout = qtWidgets.QStackedLayout()
-
-        self.pages_list = []
+        self.launcher_stackedLayout = qtWidgets.QStackedLayout()
         self.update_page_list()
-
         self.top_layout = qtWidgets.QHBoxLayout()
-
-        self.top_layout.addWidget(self.page_combo, 2)
+        self.top_layout.addWidget(self.launcher_page_combo, 2)
         self.top_layout.addWidget(self.addprofile_button)
         # self.top_layout.addWidget(self.editprofile_button)
         self.top_layout.addWidget(self.deleteprofile_button)
         self.top_layout.addWidget(self.refresh_button)
-        self.top_layout.addWidget(self.settings_button)
+        # self.top_layout.addWidget(self.settings_button)
+        launcher_layout_page.addLayout(self.top_layout)
+        launcher_layout_page.addLayout(self.launcher_stackedLayout)
+        launcher_page.setLayout(launcher_layout_page)
 
-        layout.addLayout(self.top_layout)
-        layout.addLayout(self.stackedLayout)
+        # DOWNLOADER SECTION
+        downloader_layout_page = qtWidgets.QVBoxLayout()
+        downloader_layout_page.addWidget(qtWidgets.QLabel("Downloader Placeholder"))
+        downloader_page.setLayout(downloader_layout_page)
+
+        # MARKETPLACE SECTION
+        marketplace_layout_page = qtWidgets.QVBoxLayout()
+        marketplace_layout_page.addWidget(qtWidgets.QLabel("Marketplace Placeholder"))
+        marketplace_page.setLayout(marketplace_layout_page)
+
+        # SETTINGS SECTION
+        settings_layout_page = qtWidgets.QVBoxLayout()
+        settings_layout_page.addWidget(qtWidgets.QLabel("Settings Placeholders"))
+        settings_page.setLayout(settings_layout_page)
+
+        # ABOUT SECTION
+        about_layout_page = qtWidgets.QVBoxLayout()
+        about_sublayout = qtWidgets.QVBoxLayout()
+        about_sublayout.setAlignment(qtCore.Qt.AlignCenter)
+        about_label_content = f"""
+            <font face=verdana color=white>
+            <h1>R6Launcher version version {self.launcher_version}</h1>
+            <br>
+            <h3>Made by Lungu</h3>
+            <h3>Checkout the <a href='https://discord.com/invite/9KByVQXFck'>Modded R6 discord server!<a/></h3>
+            </font>
+        """
+        about_label = qtWidgets.QLabel(about_label_content)
+        about_label.setOpenExternalLinks(True)
+        about_sublayout.addWidget(about_label)
+        about_layout_page.addLayout(about_sublayout)
+        about_page.setLayout(about_layout_page)
+
+        self.parent_stacked_layout.addWidget(launcher_page)
+        self.parent_stacked_layout.addWidget(downloader_page)
+        self.parent_stacked_layout.addWidget(marketplace_page)
+        self.parent_stacked_layout.addWidget(settings_page)
+        self.parent_stacked_layout.addWidget(about_page)
+        self.parent_stacked_layout.setAlignment(qtCore.Qt.AlignLeft | qtCore.Qt.AlignTop)
+
+    @qtCore.pyqtSlot()
+    def parent_switch_page_launcher(self):
+        self.parent_stacked_layout.setCurrentIndex(0)
+
+    @qtCore.pyqtSlot()
+    def parent_switch_page_downloader(self):
+        self.parent_stacked_layout.setCurrentIndex(1)
+
+    @qtCore.pyqtSlot()
+    def parent_switch_page_marketplace(self):
+        self.parent_stacked_layout.setCurrentIndex(2)
+
+    @qtCore.pyqtSlot()
+    def parent_switch_page_settings(self):
+        self.parent_stacked_layout.setCurrentIndex(3)
+
+    @qtCore.pyqtSlot()
+    def parent_switch_page_about(self):
+        self.parent_stacked_layout.setCurrentIndex(4)
 
     def update_check_box(self):
-        self.page_combo.clear()
+        self.launcher_page_combo.clear()
         if not self.profile_list:
-            self.page_combo.addItem("<Add a new profile to start>")
+            self.launcher_page_combo.addItem("<Add a new profile to start>")
             self.logger.log(self.logger.INFO, "No profile found, showing '<Add a new profile to start>'")
         for profile in self.profile_list:
-            self.page_combo.addItem(profile.name)
+            self.launcher_page_combo.addItem(profile.name)
             self.logger.log(self.logger.INFO, f"Added profile {profile.to_string()} to combo box")
 
     def update_page_list(self):
-        self.pages_list = []
-        self.clear_layout(self.stackedLayout)
+        self.clear_layout(self.launcher_stackedLayout)
         for profile in self.profile_list:
             page = qtWidgets.QWidget()
 
@@ -184,14 +279,12 @@ class MainWindow(qtWidgets.QWidget):
             page_layout_parent.addWidget(play_button)
 
             page.setLayout(page_layout_parent)
+            self.launcher_stackedLayout.addWidget(page)
 
-            self.pages_list.append(page)
-            self.stackedLayout.addWidget(page)
+            self.launcher_switch_page()
 
-            self.switch_page()
-
-    def switch_page(self):
-        self.stackedLayout.setCurrentIndex(self.page_combo.currentIndex())
+    def launcher_switch_page(self):
+        self.launcher_stackedLayout.setCurrentIndex(self.launcher_page_combo.currentIndex())
 
     def add_profile_json(self, _new_profile):
         self.profile_list = []
@@ -223,7 +316,7 @@ class MainWindow(qtWidgets.QWidget):
 
     @qtCore.pyqtSlot()
     def on_click_play_siege(self):
-        current_profile = self.profile_list[self.page_combo.currentIndex()]
+        current_profile = self.profile_list[self.launcher_page_combo.currentIndex()]
         self.logger.log(self.logger.INFO, f"Playing Siege, profile {current_profile.to_string()}")
         subprocess.Popen([current_profile.exe_path, "/belaunch"], creationflags=subprocess.CREATE_NEW_CONSOLE)
 
@@ -248,7 +341,7 @@ class MainWindow(qtWidgets.QWidget):
     @qtCore.pyqtSlot()
     def button_delete_profile(self):
         if self.profile_list:
-            selected_profile = self.profile_list[self.page_combo.currentIndex()]
+            selected_profile = self.profile_list[self.launcher_page_combo.currentIndex()]
 
             messagebox = qtWidgets.QMessageBox.question(self, 'Are you sure',
                                                         f"Delete profile \"{selected_profile.name}\"?",

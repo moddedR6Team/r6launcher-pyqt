@@ -1,0 +1,8 @@
+0.0.2
+- Added sidebar menu
+- Settings moved to the sidebar
+- Added About page
+- When you create a new profile, if the Siege version folder name is "YXSX_SeasonName", 'Profile Name' section will automatically be filled with Season Name
+
+0.0.1
+- Initial Release
